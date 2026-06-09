@@ -1,0 +1,9 @@
+{
+  "name": "zyklus",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zyklus – Menstrual cycle and fertility tracker",
+  "scripts": {
+    "test": "node --test js/*.test.js"
+  }
+}
