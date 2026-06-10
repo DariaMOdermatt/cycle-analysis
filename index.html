@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Zyklus">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#faf6f4">
+<title>Zyklus</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React (no Babel needed — JSX pre-compiled to createElement) -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+<script src="js/storage.js"></script>
+<script src="js/engine.js"></script>
+<script>
+// ══════════════════════════════════════════════
+// MODUL: React Components & App
+// ══════════════════════════════════════════════
+
+ function nowTime(){ return new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); }
+
+ (function(){
+var e = React.createElement;
+var useState = React.useState;
+var useEffect = React.useEffect;
+var useMemo = React.useMemo;
+var useCallback = React.useCallback;
+var Fragment = React.Fragment;
+
+// ── LevelSelector ──
+
+function LevelSelector(props) {
+  var value = props.value, onChange = props.onChange, max = props.max || 5, color = props.color, label = props.label, icon = props.icon;
+  var circles = [];
+  for (var i = 0; i < max; i++) {
+    circles.push(e('button', { key: i, className: 'circle-btn', onClick: (function(v){ return function(){ onChange(v); }; })(i + 1),
+      style: { background: i < value ? color : 'rgba(0,0,0,0.06)', opacity: i < value ? 1 : 0.35 } }));
+  }
+  return e('div', { style: { marginBottom: 18 } },
+    e('label', { className: 'field-label' }, icon, ' ', label),
+    e('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } },
+      e('button', { className: 'circle-btn', onClick: function(){ onChange(0); },
+        style: { border: value === 0 ? '2px solid ' + color : '1.5px solid var(--c-border)', background: value === 0 ? color + '15' : 'transparent', fontSize: 13, color: 'var(--c-text-soft)', fontFamily: 'var(--f-body)' } }, '\u2013'),
+      circles,
+      e('span', { style: { fontSize: 13, color: 'var(--c-text-muted)', marginLeft: 2, fontFamily: 'var(--f-body)' } }, value || '\u2013')
+    )
+  );
+}
+
+// ── MucusSelector ──
+
+function MucusSelector(props) {
+  var value = props.value, onChange = props.onChange;
+  var color = 'var(--c-mucus)';
+  var buttons = MUCUS.map(function(m, i) {
+    var active = value === i + 1;
+    return e('button', { key: i, className: 'circle-btn', title: m.tip, onClick: (function(v){ return function(){ onChange(v); }; })(i + 1),
+      style: { background: active ? '#7ba5b8' : 'rgba(0,0,0,0.06)', opacity: active ? 1 : 0.35, fontSize: m.short.length > 1 ? 9 : 12, fontWeight: 600, color: active ? '#fff' : '#8a7c7e', fontFamily: 'var(--f-body)', letterSpacing: -0.3 }
+    }, m.short);
+  });
+  return e('div', { style: { marginBottom: 18 } },
+    e('label', { className: 'field-label' }, '\uD83D\uDCA7 Zervixschleim'),
+    e('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } },
+      e('button', { className: 'circle-btn', onClick: function(){ onChange(0); },
+        style: { border: value === 0 ? '2px solid ' + color : '1.5px solid var(--c-border)', background: value === 0 ? color + '15' : 'transparent', fontSize: 13, color: 'var(--c-text-soft)', fontFamily: 'var(--f-body)' } }, '\u2013'),
+      buttons
+    ),
+    value > 0 ? e('div', { style: { fontSize: 12, color: 'var(--c-text-muted)', marginTop: 5, marginLeft: 40 } }, MUCUS[value - 1].tip) : null
+  );
+}
+
+// ── Toggle ──
+
+function Toggle(props) {
+  var value = props.value, onChange = props.onChange, label = props.label;
+  return e('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, cursor: 'pointer' }, onClick: function(){ onChange(!value); } },
+    e('div', { className: 'toggle-track', style: { background: value ? 'var(--c-rose)' : '#ddd5d6' } },
+      e('div', { className: 'toggle-thumb', style: { left: value ? 20 : 2 } })
+    ),
+    e('span', { style: { fontSize: 13, color: 'var(--c-text-soft)', fontFamily: 'var(--f-body)' } }, label)
+  );
+}
+
+// ── LevelDots ──
+
+function LevelDots(props) {
+  var value = props.value, max = props.max || 5, color = props.color, size = props.size || 8;
+  var dots = [];
+  for (var i = 0; i < max; i++) {
+    dots.push(e('div', { key: i, style: { width: size, height: size, borderRadius: '50%', background: i < value ? color : 'rgba(0,0,0,0.07)' } }));
+  }
+  return e('div', { style: { display: 'flex', gap: 2, alignItems: 'center' } }, dots);
+}
+
+// ── TempChart ──
+
+function TempChart(props) {
+  var entries = props.entries, dateRange = props.dateRange, fertilityMap = props.fertilityMap || {}, coverlineIn = props.coverlineIn || null, cycleStart = props.cycleStart || null, fullscreen = props.fullscreen || false;
+  var _entries = entries, _dateRange = dateRange;
+
+  var allDays = useMemo(function() {
+    return _dateRange.map(function(d) {
+      var en = _entries[d];
+      var tempVal = en && en.temperature ? roundTemp(parseFloat(en.temperature)) : null;
+      var tempExcluded = en && en.tempExclude || false;
+      return { date: d, temp: tempVal, tempExcluded: tempExcluded, mucus: en ? en.mucus || 0 : 0, mucusExcluded: en ? en.mucusExclude || false : false, bleeding: en ? en.bleeding || 0 : 0 };
+    });
+  }, [_entries, _dateRange]);
+
+  var measured = allDays.filter(function(d) { return d.temp !== null && !d.tempExcluded; });
+  var allTempsArr = allDays.filter(function(d) { return d.temp !== null; });
+  var n = allDays.length;
+
+  var coverlineData = useMemo(function() {
+    if (coverlineIn && coverlineIn.coverline !== undefined) {
+      return { coverline: coverlineIn.coverline };
+    }
+    if (measured.length < 9) return null;
+    for (var i = 6; i <= measured.length - 3; i++) {
+      var low6 = measured.slice(i - 6, i).map(function(d) { return d.temp; });
+      var cl = Math.max.apply(null, low6);
+      var high3 = measured.slice(i, i + 3);
+      var allAbove = high3.every(function(d) { return d.temp > cl; });
+      if (!allAbove) continue;
+      return { coverline: cl };
+    }
+    return null;
+  }, [measured, allDays, coverlineIn]);
+
+  if (allTempsArr.length < 2) return e('div', { style: { padding: 20, textAlign: 'center', color: 'var(--c-text-muted)', fontSize: 13 } }, 'Mind. 2 Temperaturwerte nötig');
+
+  var padL = 50, padR = 12, padT = 20, padB = 78;
+  var temps = allTempsArr.map(function(d) { return d.temp; });
+  var minT = Math.floor((Math.min.apply(null, temps) - 0.1) * 10) / 10;
+  var maxT = Math.ceil((Math.max.apply(null, temps) + 0.1) * 10) / 10;
+  var rangeT = maxT - minT || 1;
+  var cW = fullscreen ? Math.max(500, window.innerWidth - 32) : Math.max(500, n * 22);
+  var cH = fullscreen ? Math.max(340, window.innerHeight - 100) : 340;
+  var fontScale = Math.max(0.9, Math.min(cW / 500, 2.2));
+  var w = cW - padL - padR, h = cH - padT - padB;
+  var pxPerDay = w / Math.max(n, 1);
+  var skipX = pxPerDay < 13 ? 3 : pxPerDay < 22 ? 2 : 1;
+  function xPos(i) { return padL + (i / (n - 1)) * w; }
+
+  var bgRects = [];
+  var stepX = n > 1 ? w / (n - 1) : 0;
+  for (var bd = 0; bd < n; bd++) {
+    var fVal = fertilityMap[allDays[bd].date];
+    if (fVal === 'fertile' || fVal === 'infertile') {
+      var leftX = bd === 0 ? padL : xPos(bd) - stepX / 2;
+      var rightX = bd < n - 1 ? xPos(bd) + stepX / 2 : cW - padR;
+      var fillColor = fVal === 'fertile' ? 'rgba(232,165,173,0.15)' : 'rgba(144,186,134,0.28)';
+      bgRects.push(e('rect', { key: 'bg-' + allDays[bd].date, x: leftX, y: padT, width: rightX - leftX, height: h, fill: fillColor }));
+    }
+  }
+  function yPos(t) { return padT + h - ((t - minT) / rangeT) * h; }
+
+  var segments = [];
+  var seg = [];
+  for (var i = 0; i < n; i++) {
+    if (allDays[i].temp !== null && !allDays[i].tempExcluded) seg.push({ idx: i, temp: allDays[i].temp });
+    else if (seg.length) { segments.push(seg); seg = []; }
+  }
+  if (seg.length) segments.push(seg);
+
+  var grid = [];
+  for (var t = minT; t <= maxT; t = Math.round((t + 0.1) * 10) / 10) grid.push(t);
+
+  var skipY = grid.length > 12 ? 2 : 1;
+  var gridEls = grid.map(function(t, i) {
+    return e('g', { key: t },
+      e('line', { x1: padL, y1: yPos(t), x2: cW - padR, y2: yPos(t), stroke: '#ece6e7', strokeWidth: '0.5' }),
+      i % skipY === 0 ? e('text', { x: padL - 5, y: yPos(t) + 4, textAnchor: 'end', fontSize: Math.round(13 * fontScale), fill: '#a8949a', fontFamily: "'DM Sans',sans-serif" }, t.toFixed(1)) : null
+    );
+  });
+
+  var segEls = segments.map(function(seg, si) {
+    if (seg.length < 2) return null;
+    var pts = seg.map(function(p) { return xPos(p.idx).toFixed(1) + ',' + yPos(p.temp).toFixed(1); });
+    var pathD = 'M' + pts.join(' L');
+    return e('path', { key: si, d: pathD, fill: 'none', stroke: '#c97b84', strokeWidth: '2', strokeLinejoin: 'round', strokeLinecap: 'round' });
+  });
+
+  var monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+
+  var dotEls = [];
+  var labelEls = [];
+  var mucusEls = [];
+  var bleedEls = [];
+  var monthEls = [];
+  var lastMonth = '';
+  for (var j = 0; j < allDays.length; j++) {
+    var d = allDays[j];
+    if (d.temp !== null) {
+      var isExcl = d.tempExcluded;
+      dotEls.push(
+         e('g', { key: d.date, style: { cursor: 'pointer' }, onClick: (function(date){ return function(){ if (props.onDateClick) props.onDateClick(date); }; })(d.date) },
+          e('circle', { cx: xPos(j), cy: yPos(d.temp), r: '10', fill: 'transparent', stroke: 'none' }),
+          e('circle', { cx: xPos(j), cy: yPos(d.temp), r: '3.5', fill: isExcl ? '#fff0f0' : '#fff', stroke: isExcl ? '#d49595' : '#c97b84', strokeWidth: isExcl ? '1' : '1.5', opacity: isExcl ? 0.6 : 1 })
+        )
+      );
+    }
+    if (d.bleeding > 0) {
+      var bleedH = d.bleeding * 4;
+      var isSpotting = _entries[d.date] && _entries[d.date].spotting;
+      bleedEls.push(e('rect', { key: 'bl-' + d.date, x: xPos(j) - 4, y: padT + h - bleedH, width: 8, height: bleedH, rx: 2, fill: 'var(--c-blood)', opacity: isSpotting ? 0.15 : (0.25 + d.bleeding * 0.12) }));
+    }
+
+    // ── Row 1: Mucus as colored boxes ──
+    var mVal = d.mucus;
+    var mExcl = d.mucusExcluded;
+    var boxColors = ['', '#d4cdcd', '#bdb3b3', '#e8d44d', '#a8d4e6', '#3a6a8e'];
+    if (mVal > 0) {
+      mucusEls.push(e('rect', { key: 'm-' + d.date, x: xPos(j) - 5.5, y: padT + h + 2, width: 11, height: 13, rx: 3, fill: boxColors[mVal] || '#7ba5b8', opacity: mExcl ? 0.4 : 1, stroke: mExcl ? '#d49595' : 'none', strokeWidth: mExcl ? 1 : 0 }));
+      if (mVal >= 4) {
+        var sLabel = mVal === 4 ? 'S' : 'S+';
+        mucusEls.push(e('text', { key: 'mt-' + d.date, x: xPos(j), y: padT + h + 13, textAnchor: 'middle', fontSize: Math.round(9 * fontScale), fill: mVal === 4 ? '#3a5a6a' : '#fff', fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }, sLabel));
+      }
+    }
+
+    // ── Row 2: ZT number or dash ──
+    var ztText = cycleStart ? String(daysBetween(cycleStart, d.date) + 1) : '\u2013';
+    if (j % skipX === 0) labelEls.push(e('text', { key: 'cd-' + d.date, x: xPos(j), y: padT + h + 30, textAnchor: 'middle', fontSize: Math.round(10 * fontScale), fill: cycleStart ? '#b8a0a8' : '#d4cbcc', fontFamily: "'DM Sans',sans-serif" }, ztText));
+
+    // ── Row 3: Day of month ──
+    var dayNum = d.date.slice(8);
+    if (j % skipX === 0) labelEls.push(e('text', { key: 'lbl-' + d.date, x: xPos(j), y: padT + h + 47, textAnchor: 'middle', fontSize: Math.round(10 * fontScale), fill: d.temp !== null ? '#a8949a' : '#d4cbcc', fontFamily: "'DM Sans',sans-serif" }, dayNum));
+
+    // ── Row 4: Month at boundaries ──
+    var monthStr = d.date.slice(5, 7);
+    if (monthStr !== lastMonth && j % skipX === 0) {
+      lastMonth = monthStr;
+      monthEls.push(e('text', { key: 'mo-' + d.date, x: xPos(j), y: padT + h + 64, textAnchor: 'middle', fontSize: Math.round(10 * fontScale), fill: '#a8949a', fontFamily: "'DM Sans',sans-serif", fontWeight: 500 }, monthNames[parseInt(monthStr) - 1]));
+    } else if (monthStr !== lastMonth) {
+      lastMonth = monthStr;
+    }
+  }
+
+  return e('div', { style: { marginLeft: -4, marginRight: -4, paddingBottom: 4 } },
+    e('svg', { viewBox: '0 0 ' + cW + ' ' + cH, style: { width: '100%', height: 'auto', minHeight: fullscreen ? cH : 280, display: 'block' } },
+      bgRects,
+      gridEls,
+      segEls,
+      coverlineData ? e('line', { x1: padL, y1: yPos(coverlineData.coverline), x2: cW - padR, y2: yPos(coverlineData.coverline), stroke: '#a8677e', strokeWidth: '1.2', strokeDasharray: '5 3', opacity: '.7' }) : null,
+      dotEls,
+      bleedEls,
+      mucusEls,
+      labelEls,
+      monthEls
+    )
+  );
+}
+
+// ── BarChart ──
+
+function BarChart(props) {
+  var data = props.data, metric = props.metric, color = props.color || 'var(--c-rose)', fullscreen = props.fullscreen || false;
+  if (!data || !data.length) return e('div', { style: { padding: 20, textAlign: 'center', color: 'var(--c-text-muted)', fontSize: 13 } }, 'Keine Daten');
+
+  var padL = 50, padR = 12, padT = 16, padB = 36;
+  var cW = fullscreen ? Math.max(500, window.innerWidth - 32) : 500;
+  var cH = fullscreen ? Math.max(320, window.innerHeight - 100) : 320;
+  var fontScale = Math.max(0.9, Math.min(cW / 500, 2.2));
+  var w = cW - padL - padR, h = cH - padT - padB;
+  var n = data.length;
+  var barW = Math.min(32, (w / n) * 0.7);
+  var gap = w / n;
+  function xPos(i) { return padL + i * gap + (gap - barW) / 2; }
+
+  var values = data.map(function(d) { return d[metric] || 0; });
+  var maxVal = Math.max.apply(null, values) || 1;
+  var yMax = Math.ceil(maxVal * 1.15);
+
+  var labels = [metric === 'length' ? 'Zykluslänge (Tage)' : metric === 'umrandetDay' ? '1. unfruchtb. Tag' : 'Unfruchtb. Phase (Tage)'];
+  var labelMaxLen = Math.max.apply(null, labels.map(function(l) { return l.length; }));
+
+  var gridLines = [];
+  var step = yMax <= 10 ? 1 : yMax <= 30 ? 5 : 10;
+  for (var gy = 0; gy <= yMax; gy += step) {
+    var y = padT + h - (gy / yMax) * h;
+    gridLines.push(e('g', { key: 'g' + gy },
+      e('line', { x1: padL, y1: y, x2: cW - padR, y2: y, stroke: '#ece6e7', strokeWidth: '0.5' }),
+      e('text', { x: padL - 5, y: y + 4, textAnchor: 'end', fontSize: Math.round(13 * fontScale), fill: '#a8949a', fontFamily: "'DM Sans',sans-serif" }, gy)
+    ));
+  }
+
+  var skipBarX = n > 40 ? 3 : n > 20 ? 2 : 1;
+  var bars = data.map(function(d, i) {
+    var val = d[metric] || 0;
+    var barH = (val / yMax) * h;
+    var x = xPos(i);
+    var y = padT + h - barH;
+    var isExcl = d.excluded && metric !== 'length';
+    return e('g', { key: i },
+      e('rect', { x: x, y: y, width: barW, height: barH, rx: 3, fill: isExcl ? 'url(#hatch)' : color, opacity: isExcl ? 0.55 : 0.85 }),
+      e('text', { x: x + barW / 2, y: y - 6, textAnchor: 'middle', fontSize: Math.round(9 * fontScale), fill: isExcl ? '#b0a0a4' : '#6b5c5e', fontFamily: "'DM Sans',sans-serif", fontWeight: 500 }, val || ''),
+      i % skipBarX === 0 ? e('text', { x: x + barW / 2, y: padT + h + 14, textAnchor: 'middle', fontSize: Math.round(7.5 * fontScale), fill: isExcl ? '#c4b8ba' : '#a8949a', fontFamily: "'DM Sans',sans-serif", transform: 'rotate(-35,' + (x + barW / 2) + ',' + (padT + h + 14) + ')' }, d.label) : null
+    );
+  });
+
+  return e('div', { style: { overflow: 'visible' } },
+    e('svg', { viewBox: '0 0 ' + cW + ' ' + cH, style: { width: '100%', height: 'auto', minHeight: fullscreen ? cH : 260, display: 'block' } },
+      e('defs', null,
+        e('pattern', { id: 'hatch', patternUnits: 'userSpaceOnUse', width: 6, height: 6, patternTransform: 'rotate(45)' },
+          e('line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: color, strokeWidth: 1.5, opacity: 0.6 })
+        )
+      ),
+      gridLines,
+      bars
+    )
+  );
+}
+
+// ── EMPTY_ENTRY ──
+var EMPTY_ENTRY = { temperature: '', method: 'vaginal', tempExclude: false, tempExcludeReason: [], bleeding: 0, spotting: false, mucus: 0, mucusExclude: false, pain: 0, notes: '', time: '' };
+
+// ── App ──
+
+function App() {
+  var _s = useState(loadEntries); var entries = _s[0], setEntries = _s[1];
+  var _v = useState('calendar'); var view = _v[0], setView = _v[1];
+  var _d = useState(fmt(new Date())); var selectedDate = _d[0], setSelectedDate = _d[1];
+  var _m = useState(new Date().getMonth()); var calMonth = _m[0], setCalMonth = _m[1];
+  var _y = useState(new Date().getFullYear()); var calYear = _y[0], setCalYear = _y[1];
+  var _p = useState(''); var syncPassword = _p[0], setSyncPassword = _p[1];
+  var _t = useState(''); var toast = _t[0], setToast = _t[1];
+  var _si = useState(null); var statsCycleIdx = _si[0], setStatsCycleIdx = _si[1];
+  var _bm = useState('length'); var barMetric = _bm[0], setBarMetric = _bm[1];
+  var _bp = useState(0); var barChartPage = _bp[0], setBarChartPage = _bp[1];
+  var _co = useState(true); var criteriaExpanded = _co[0], setCriteriaExpanded = _co[1];
+  var _st = useState(loadSettings); var settings = _st[0], setSettings = _st[1];
+  var _nr = useState(''); var newReason = _nr[0], setNewReason = _nr[1];
+  var _fc = useState(null); var fullscreenChart = _fc[0], setFullscreenChart = _fc[1];
+
+  var saveEntries = useCallback(function(ne) { setEntries(ne); persistEntries(ne); }, []);
+  var saveAppSettings = useCallback(function(ns) { var merged = Object.assign({}, settings, ns); setSettings(merged); saveSettings(merged); }, [settings]);
+  var showToast = function(msg) { setToast(msg); setTimeout(function() { setToast(''); }, 2400); };
+
+  useEffect(function() {
+    if (!fullscreenChart) return;
+    function onKey(e) { if (e.key === 'Escape') setFullscreenChart(null); }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, [fullscreenChart]);
+
+  var currentEntry = entries[selectedDate] || Object.assign({}, EMPTY_ENTRY, { time: nowTime() });
+  function updateEntry(field, value) {
+    var ce = entries[selectedDate] || Object.assign({}, EMPTY_ENTRY, { time: nowTime() });
+    var updated = {};
+    for (var k in ce) updated[k] = ce[k];
+    updated[field] = value;
+    if (field === 'bleeding' && value === 0) updated.spotting = false;
+    updated.time = field === 'time' ? value : (ce.time || nowTime());
+    var ne = {};
+    for (var k2 in entries) ne[k2] = entries[k2];
+    ne[selectedDate] = updated;
+    saveEntries(ne);
+  }
+  function shiftDate(days) { var d = parseLocal(selectedDate); d.setDate(d.getDate() + days); setSelectedDate(fmt(d)); }
+
+  async function handleExport() {
+    if (!syncPassword || syncPassword.length < 6) { showToast('Passwort: min. 6 Zeichen'); return; }
+    try {
+      var enc = await encryptData(entries, syncPassword);
+      var blob = new Blob([enc], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'cycle-data-' + fmt(new Date()) + '.enc.json'; a.click();
+      URL.revokeObjectURL(url); showToast('Export \u2713');
+    } catch(e) { showToast('Export fehlgeschlagen'); }
+  }
+  async function handleImport(ev) {
+    var file = ev.target.files ? ev.target.files[0] : null;
+    if (!file || !syncPassword || syncPassword.length < 6) { showToast('Datei + Passwort nötig'); return; }
+    try {
+      var text = await file.text();
+      var dec = await decryptData(text, syncPassword);
+      var merged = {};
+      for (var k in entries) merged[k] = entries[k];
+      for (var k2 in dec) merged[k2] = dec[k2];
+      saveEntries(merged);
+      showToast(Object.keys(dec).length + ' importiert \u2713');
+    } catch(e) { showToast('Falsches Passwort?'); }
+  }
+
+  function handleCsvExport() {
+    try {
+      var csv = entriesToCsv(entries);
+      var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'cycle-data-' + fmt(new Date()) + '.csv'; a.click();
+      URL.revokeObjectURL(url); showToast('CSV Export \u2713');
+    } catch(e) { showToast('CSV Export fehlgeschlagen'); }
+  }
+  function handleCsvImport(ev) {
+    var file = ev.target.files ? ev.target.files[0] : null;
+    if (!file) { showToast('Keine Datei gewählt'); return; }
+    try {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var imported = csvToEntries(e.target.result);
+          var count = Object.keys(imported).length;
+          if (!count) { showToast('Keine gültigen Zeilen gefunden'); return; }
+          var existingCount = Object.keys(entries).length;
+          if (existingCount > 0) {
+            var confirmed = confirm('Achtung: ' + existingCount + ' bestehende Einträge werden durch ' + count + ' importierte Einträge ersetzt. Fortfahren?');
+            if (!confirmed) { showToast('Import abgebrochen'); return; }
+          }
+          saveEntries(imported);
+          showToast(count + ' importiert, ' + existingCount + ' ersetzt \u2713');
+        } catch(err) { showToast('CSV fehlerhaft'); }
+      };
+      reader.readAsText(file, 'UTF-8');
+    } catch(e) { showToast('CSV Import fehlgeschlagen'); }
+  }
+
+  var analyzed = useMemo(function() { return fullAnalysis(entries, settings.excludedCycles, settings.manualCoverline, settings.manualCoverlineEnabled); }, [entries, settings.excludedCycles, settings.manualCoverline, settings.manualCoverlineEnabled]);
+
+  function getCoverlineFor(cycleStart) {
+    var manualEnabled = settings.manualCoverlineEnabled && cycleStart ? settings.manualCoverlineEnabled[cycleStart] : false;
+    var manual = manualEnabled && settings.manualCoverline && cycleStart ? settings.manualCoverline[cycleStart] : undefined;
+    var a = null;
+    for (var i = 0; i < analyzed.length; i++) { if (analyzed[i].start === cycleStart) { a = analyzed[i]; break; } }
+    var peakDate = a && a.mucus && a.mucus.peakDate ? a.mucus.peakDate : null;
+    if (manual !== undefined && manual !== '') {
+      return peakDate ? { coverline: parseFloat(manual), mucusPeakDate: peakDate } : { coverline: parseFloat(manual) };
+    }
+    if (a && a.temp && a.temp.coverline !== undefined && peakDate) {
+      return { coverline: a.temp.coverline, mucusPeakDate: peakDate };
+    }
+    return null;
+  }
+
+  var cycles = useMemo(function() { return detectCycles(entries); }, [entries]);
+
+  var currentCycle = useMemo(function() {
+    if (!cycles.length) return null;
+    var last = cycles[cycles.length - 1];
+    if (last.ongoing || last.end >= fmt(new Date())) return last;
+    return null;
+  }, [cycles]);
+
+  var currentCycleDay = useMemo(function() {
+    if (!currentCycle) return null;
+    return daysBetween(currentCycle.start, fmt(new Date())) + 1;
+  }, [currentCycle]);
+
+  var fertilityMap = useMemo(function() {
+    var map = {};
+    for (var i = 0; i < analyzed.length; i++) {
+      var fert = computeFertility(analyzed[i], analyzed, entries);
+      for (var k in fert.result) map[k] = fert.result[k];
+    }
+    return map;
+  }, [analyzed, entries]);
+
+  var currentFertility = useMemo(function() {
+    if (!currentCycle) return null;
+    for (var i = 0; i < analyzed.length; i++) { if (analyzed[i].start === currentCycle.start) return computeFertility(currentCycle, analyzed, entries); }
+    return null;
+  }, [currentCycle, analyzed, entries]);
+
+  var currentAnalysis = useMemo(function() {
+    if (!currentCycle) return null;
+    for (var i = 0; i < analyzed.length; i++) { if (analyzed[i].start === currentCycle.start) return analyzed[i]; }
+    return null;
+  }, [analyzed, currentCycle]);
+
+  var menstruationPrediction = useMemo(function() {
+    if (!currentCycle) return null;
+    return predictNextMenstruation(currentCycle, analyzed, entries);
+  }, [currentCycle, analyzed, entries]);
+
+  var predictedMenstruationDates = useMemo(function() {
+    var set = new Set();
+    if (menstruationPrediction && menstruationPrediction.canPredict) {
+      var a = menstruationPrediction.nextFromLength;
+      var b = menstruationPrediction.nextFromInfertile;
+      set.add(a);
+      if (a !== b) {
+        set.add(b);
+        var start = a < b ? a : b;
+        var end = a < b ? b : a;
+        var d = addDays(start, 1);
+        while (d < end) { set.add(d); d = addDays(d, 1); }
+      }
+    }
+    return set;
+  }, [menstruationPrediction]);
+
+  var daysInMonth = getDaysInMonth(calYear, calMonth);
+  var firstDay = getFirstDayOfWeek(calYear, calMonth);
+  var today = fmt(new Date());
+  var allDates = Object.keys(entries).sort();
+  var bleedingDays = allDates.filter(function(d) { return entries[d].bleeding > 0; });
+
+  var chartDates = useMemo(function() {
+    var d = [];
+    for (var i = 1; i <= daysInMonth; i++) d.push(fmt(new Date(calYear, calMonth, i)));
+    return d;
+  }, [calYear, calMonth, daysInMonth]);
+
+  function mucusShort(v) { return v > 0 ? MUCUS[v - 1].short : '\u2013'; }
+
+  var activeStatsCycleIdx = statsCycleIdx !== null ? statsCycleIdx : (cycles.length ? cycles.length - 1 : 0);
+  var statsCycleDates = useMemo(function() {
+    if (!cycles.length) return [];
+    var c = cycles[activeStatsCycleIdx];
+    if (!c) return [];
+    return getCycleDates(c, entries);
+  }, [cycles, activeStatsCycleIdx, entries]);
+  var statsCycleLabel = useMemo(function() {
+    if (!cycles.length || !cycles[activeStatsCycleIdx]) return '';
+    var c = cycles[activeStatsCycleIdx];
+    var s = parseLocal(c.start);
+    var label = s.toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' });
+    var excluded = settings.excludedCycles && settings.excludedCycles.indexOf(c.start) !== -1;
+    var base = c.ongoing ? 'Ab ' + label + ' (laufend)' : label + ' \u00B7 ' + c.length + ' Tage';
+    return excluded ? base + ' \u2014 ausgeschlossen' : base;
+  }, [cycles, activeStatsCycleIdx, settings.excludedCycles]);
+
+  var barChartData = useMemo(function() {
+    var completed = analyzed.filter(function(a) {
+      return a.length;
+    });
+    var offset = barChartPage * 12;
+    var start = Math.max(0, completed.length - 12 - offset);
+    var end = completed.length - offset;
+    var windowed = completed.slice(start, end);
+    return windowed.map(function(a) {
+      var umDay = a.found ? a.umrandetCycleDay : (a.mucus && a.mucus.found ? a.mucus.plus3CycleDay : 0);
+      var infPh = umDay > 0 ? a.length - umDay + 1 : 0;
+      return {
+        label: parseLocal(a.start).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }),
+        length: a.length,
+        umrandetDay: umDay,
+        infertilePhase: infPh,
+        excluded: a.excluded || false
+      };
+    });
+  }, [analyzed, barChartPage]);
+
+  var todayFertility = fertilityMap[today];
+  var phaseLabel = todayFertility === 'infertile' ? 'Unfruchtbar' : (todayFertility === 'fertile' ? 'Fruchtbar' : 'Unbestimmt');
+  var phaseClass = todayFertility === 'infertile' ? 'phase-infertile' : (todayFertility === 'fertile' ? 'phase-fertile' : 'phase-unknown');
+
+  var VIEWS = [{ key: 'calendar', label: 'Kalender' }, { key: 'entry', label: 'Eintrag' }, { key: 'stats', label: 'Auswertung' }, { key: 'sync', label: 'Sync' }];
+
+  // ── Build children ──
+
+  var headerEl = e('div', { className: 'header' },
+    e('h1', null, 'Zyklus'),
+    e('div', { className: 'sub' }, 'Dein Körper · Deine Daten')
+  );
+
+  var navEl = e('nav', { className: 'top-nav' }, VIEWS.map(function(v) {
+    return e('button', { key: v.key, className: 'nav-pill' + (view === v.key ? ' active' : ''), onClick: (function(k){ return function(){ setView(k); }; })(v.key) }, v.label);
+  }));
+
+  // ── Calendar view ──
+
+  var calCells = [];
+  for (var ci = 0; ci < firstDay; ci++) calCells.push(e('div', { key: 'e' + ci }));
+  for (var cd = 1; cd <= daysInMonth; cd++) {
+    var ds = fmt(new Date(calYear, calMonth, cd));
+    var en = entries[ds], bl = en && en.bleeding || 0, sp = en && en.spotting || false;
+    var fert = fertilityMap[ds];
+    var fertClass = fert === 'fertile' ? 'fertile-bg' : (fert === 'infertile' ? 'infertile-bg' : '');
+    var isUmrandet = analyzed.some(function(a) { return a.found && a.umrandetDate === ds; });
+    var isPredictedMenstruation = predictedMenstruationDates.has(ds);
+    var cls = 'cal-cell' +
+      (ds === today ? ' today' : '') +
+      (ds === selectedDate ? ' selected' : '') +
+      (en ? ' has-entry' : '') +
+      (isPredictedMenstruation ? ' menstruation-predicted' : '') +
+      (fertClass ? ' ' + fertClass : '');
+    calCells.push(e('div', { key: cd, className: cls, onClick: (function(ds2){ return function(){ setSelectedDate(ds2); setView('entry'); }; })(ds) },
+      bl > 0 ? e('div', { className: sp ? 'bleed-dot-spotting' : 'bleed-dot', style: { background: 'rgba(190,60,70,' + (0.3 + bl * 0.14) + ')' } }) : null,
+      isUmrandet && !bl ? e('div', { style: { position: 'absolute', top: 2, left: 2, width: 8, height: 8, borderRadius: '50%', border: '1.5px solid var(--c-rose)' } }) : null,
+      cd
+    ));
+  }
+
+  var calCard = e('div', { className: 'card' },
+    e('div', { className: 'cal-nav' },
+      e('button', { onClick: function() { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); } else setCalMonth(calMonth - 1); } }, '\u2039'),
+      e('span', { style: { fontFamily: 'var(--f-head)', fontSize: 17, fontWeight: 500, color: '#5a3d42' } }, MONTHS_DE[calMonth] + ' ' + calYear),
+      e('button', { onClick: function() { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); } else setCalMonth(calMonth + 1); } }, '\u203A')
+    ),
+    e('div', { className: 'cal-grid' },
+      DAYS_DE.map(function(d) { return e('div', { key: d, className: 'cal-hdr' }, d); }),
+      calCells
+    )
+  );
+
+  var cycleBanner = null;
+  if (currentCycle) {
+    cycleBanner = e('div', { className: 'cycle-banner', style: { background: 'var(--c-card)', boxShadow: '0 1px 6px rgba(100,60,70,.04)' } },
+      e('div', null, e('div', { className: 'cb-label' }, 'Zyklustag'), e('div', { className: 'cb-val' }, currentCycleDay)),
+      e('div', null, e('div', { className: 'cb-label' }, 'Zyklusbeginn'), e('div', { className: 'cb-val' }, parseLocal(currentCycle.start).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }))),
+      e('div', null, e('div', { className: 'cb-label' }, 'Phase'), e('div', null, e('span', { className: 'phase-pill ' + phaseClass }, phaseLabel))),
+      currentAnalysis && currentAnalysis.temp && currentAnalysis.temp.confirmed ? e('div', null, e('div', { className: 'cb-label' }, 'Coverline'), e('div', { className: 'cb-val' }, currentAnalysis.temp.coverline.toFixed(2) + '\u00B0')) : null,
+      currentAnalysis && currentAnalysis.mucus && currentAnalysis.mucus.found ? e('div', null, e('div', { className: 'cb-label' }, 'Peak Day'), e('div', { className: 'cb-val' }, 'Tag ' + currentAnalysis.mucus.peakCycleDay)) : null,
+      currentAnalysis && currentAnalysis.found ? e('div', null, e('div', { className: 'cb-label' }, 'Umrandeter Tag'), e('div', { className: 'cb-val' }, 'Tag ' + currentAnalysis.umrandetCycleDay + ' ', e('span', { className: 'umrandet-marker' }, '\u2299'))) : null,
+      (function() {
+        if (!menstruationPrediction || !menstruationPrediction.canPredict || !currentAnalysis || !currentAnalysis.found) return null;
+        var p = menstruationPrediction;
+        var fmtDate = function(ds) { return parseLocal(ds).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }); };
+        return e('div', { style: { flexBasis: '100%', paddingTop: 10, borderTop: '1px solid #f3edee' } },
+          e('div', { style: { fontSize: 12, color: 'var(--c-text-muted)', letterSpacing: '.3px', marginBottom: 6 } }, 'Nächste Menstruation voraussichtlich'),
+          e('div', { style: { display: 'flex', gap: 24, flexWrap: 'wrap' } },
+            e('div', null,
+              e('div', { style: { fontSize: 11, color: 'var(--c-text-muted)' } }, '\u00D8 Zykluslänge (' + p.avgCycleLength + ' Tage)'),
+              e('div', { style: { fontFamily: 'var(--f-head)', fontWeight: 500, fontSize: 15, color: '#5a3d42' } }, '~' + fmtDate(p.nextFromLength))
+            ),
+            e('div', null,
+              e('div', { style: { fontSize: 11, color: 'var(--c-text-muted)' } }, '\u00D8 unfruchtbare Phase (' + p.avgInfertilePhase + ' Tage)'),
+              e('div', { style: { fontFamily: 'var(--f-head)', fontWeight: 500, fontSize: 15, color: '#5a3d42' } }, '~' + fmtDate(p.nextFromInfertile))
+            )
+          ),
+          p.completedCount < 3 ? e('div', { style: { marginTop: 6, fontSize: 11, color: '#b0a0a4', fontStyle: 'italic' } }, 'Basiert auf nur ' + p.completedCount + ' ausgewerteten Zyklen') : null
+        );
+      })()
+    );
+  }
+
+  var selectedCard = null;
+  if (entries[selectedDate]) {
+    selectedCard = e('div', { className: 'card' },
+      e('h3', null, parseLocal(selectedDate).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })),
+      e('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center' } },
+        currentEntry.temperature ? e('div', null,
+          e('span', { style: { fontSize: 12, color: 'var(--c-text-muted)' } }, 'Temp '),
+          e('span', { style: { fontFamily: 'var(--f-head)', fontSize: 20, fontWeight: 500, color: currentEntry.tempExclude ? '#c4b8ba' : '#5a3d42', textDecoration: currentEntry.tempExclude ? 'line-through' : 'none' } }, currentEntry.temperature + '\u00B0'),
+          (function() { var reasons = Array.isArray(currentEntry.tempExcludeReason) ? currentEntry.tempExcludeReason : (currentEntry.tempExcludeReason ? [currentEntry.tempExcludeReason] : []); return reasons.length ? e('span', { style: { fontSize: 11, color: currentEntry.tempExclude ? '#d49595' : '#9a8a8c', marginLeft: 4, fontFamily: 'var(--f-body)' } }, '(' + reasons.join(', ') + ')') : null; })(),
+          e('span', { style: { fontSize: 11, color: 'var(--c-text-muted)', marginLeft: 3 } }, currentEntry.method)
+        ) : null,
+        currentEntry.bleeding > 0 ? e('div', null, e('span', { style: { fontSize: 12, color: 'var(--c-text-muted)' } }, 'Blutung' + (currentEntry.spotting ? ' (Schmierblutung)' : '') + ' '), e(LevelDots, { value: currentEntry.bleeding, color: 'var(--c-blood)' })) : null,
+        currentEntry.mucus > 0 ? e('div', null, e('span', { style: { fontSize: 12, color: 'var(--c-text-muted)' } }, 'Schleim' + (currentEntry.mucusExclude ? ' (ausgekl.)' : '') + ' '), e('span', { style: { fontFamily: 'var(--f-head)', fontWeight: 600, color: currentEntry.mucusExclude ? '#d49595' : 'var(--c-mucus)', fontSize: 14 } }, mucusShort(currentEntry.mucus))) : null,
+        currentEntry.pain > 0 ? e('div', null, e('span', { style: { fontSize: 12, color: 'var(--c-text-muted)' } }, 'Schmerz '), e(LevelDots, { value: currentEntry.pain, color: 'var(--c-pain)' })) : null
+      ),
+      currentEntry.notes ? e('div', { style: { marginTop: 8, fontSize: 12, color: 'var(--c-text-soft)', fontStyle: 'italic' } }, '\u201E' + currentEntry.notes + '\u201D') : null
+    );
+  }
+
+  var calView = e(Fragment, null,
+    calCard,
+    cycleBanner,
+    selectedCard,
+    e('div', { className: 'card' },
+      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 } },
+        e('h3', { style: { margin: 0 } }, 'Temperaturkurve'),
+        e('button', { onClick: function() { setFullscreenChart('tempCal'); }, title: 'Vollbild', style: { background: 'none', border: '1.5px solid var(--c-border)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', fontSize: 14, color: 'var(--c-text-muted)', fontFamily: 'var(--f-body)', lineHeight: 1 } }, '\u26F6')
+      ),
+      e(TempChart, { entries: entries, dateRange: chartDates, fertilityMap: fertilityMap, coverlineIn: currentCycle ? getCoverlineFor(currentCycle.start) : null, cycleStart: currentCycle ? currentCycle.start : null, onDateClick: function(date) { setSelectedDate(date); setView('entry'); } }))
+  );
+
+  // ── Entry view ──
+
+  var entryView = e('div', { className: 'card' },
+    e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 } },
+      e('button', { className: 'date-arrow', onClick: function() { shiftDate(-1); } }, '\u2039'),
+      e('h3', { style: { margin: 0, textAlign: 'center', flex: 1 } }, parseLocal(selectedDate).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })),
+      e('button', { className: 'date-arrow', onClick: function() { shiftDate(1); } }, '\u203A')
+    ),
+    e('label', { className: 'field-label' }, '\uD83D\uDD50 Uhrzeit'),
+    e('input', { type: 'time', className: 'inp', value: currentEntry.time || nowTime(), onChange: function(ev) { updateEntry('time', ev.target.value); } }),
+    e('label', { className: 'field-label' }, '\uD83C\uDF21\uFE0F Temperatur (°C)'),
+    e('input', { type: 'number', step: '0.01', min: '35', max: '42', placeholder: 'z.B. 36.52', className: 'inp', value: currentEntry.temperature, onChange: function(ev) { updateEntry('temperature', ev.target.value); }, inputMode: 'decimal' }),
+    e('label', { className: 'field-label' }, 'Messweise'),
+    e('div', { className: 'method-group' }, ['vaginal','oral','anal'].map(function(m) {
+      return e('button', { key: m, className: 'method-btn' + (currentEntry.method === m ? ' active' : ''), onClick: function() { updateEntry('method', m); } }, m.charAt(0).toUpperCase() + m.slice(1));
+    })),
+    e(Toggle, { value: currentEntry.tempExclude, onChange: function(v) { updateEntry('tempExclude', v); }, label: 'Temperatur ausklammern' }),
+    e('div', { style: { marginBottom: 14 } },
+      e('label', { className: 'field-label' }, 'Störfaktoren'),
+      e('div', { className: 'reason-group' }, settings.tempExcludeReasons.map(function(r) {
+        var reasons = Array.isArray(currentEntry.tempExcludeReason) ? currentEntry.tempExcludeReason : (currentEntry.tempExcludeReason ? [currentEntry.tempExcludeReason] : []);
+        return e('button', { key: r, className: 'reason-btn' + (reasons.indexOf(r) !== -1 ? ' active' : ''), onClick: function() {
+          var cur = Array.isArray(currentEntry.tempExcludeReason) ? currentEntry.tempExcludeReason.slice() : (currentEntry.tempExcludeReason ? [currentEntry.tempExcludeReason] : []);
+          var idx = cur.indexOf(r);
+          if (idx === -1) cur.push(r); else cur.splice(idx, 1);
+          updateEntry('tempExcludeReason', cur);
+        } }, r);
+      }))
+    ),
+    e('div', { className: 'divider' }),
+    e(LevelSelector, { value: currentEntry.bleeding, onChange: function(v) { updateEntry('bleeding', v); }, color: 'var(--c-blood)', label: 'Blutung', icon: '\uD83E\uDE78' }),
+    currentEntry.bleeding > 0 ? e(Toggle, { value: currentEntry.spotting || false, onChange: function(v) { updateEntry('spotting', v); }, label: 'Schmierblutung (kein Zyklusbeginn)' }) : null,
+    e(MucusSelector, { value: currentEntry.mucus, onChange: function(v) { updateEntry('mucus', v); } }),
+    e(Toggle, { value: currentEntry.mucusExclude, onChange: function(v) { updateEntry('mucusExclude', v); }, label: 'Schleim ausklammern' }),
+    e(LevelSelector, { value: currentEntry.pain, onChange: function(v) { updateEntry('pain', v); }, color: 'var(--c-pain)', label: 'Menstruationsschmerzen', icon: '\u26A1' }),
+    e('div', { className: 'divider' }),
+    e('label', { className: 'field-label' }, '\uD83D\uDCDD Bemerkungen'),
+    e('textarea', { className: 'inp', placeholder: 'Notizen, Beobachtungen\u2026', value: currentEntry.notes, onChange: function(ev) { updateEntry('notes', ev.target.value); } }),
+    entries[selectedDate] ? e('button', { className: 'btn btn-sec', style: { width: '100%', marginTop: 6, color: 'var(--c-blood)' }, onClick: function() {
+      var u = {}; for (var k in entries) u[k] = entries[k]; delete u[selectedDate]; saveEntries(u); showToast('Gelöscht');
+    } }, 'Eintrag löschen') : null
+  );
+
+  // ── Stats view ──
+
+  var statRows = [
+    e('div', { className: 'stat-row', key: 'total' }, e('span', { className: 'stat-label' }, 'Einträge gesamt'), e('span', { className: 'stat-val' }, allDates.length)),
+    e('div', { className: 'stat-row', key: 'cycles' }, e('span', { className: 'stat-label' }, 'Erkannte Zyklen'), e('span', { className: 'stat-val' }, cycles.length || '\u2013'))
+  ];
+
+  var cyclesWithLength = cycles.filter(function(c) { return c.length; });
+  if (cyclesWithLength.length > 0) {
+    var avg = Math.round(cyclesWithLength.reduce(function(a, c) { return a + c.length; }, 0) / cyclesWithLength.length);
+    var minCyc = Math.min.apply(null, cyclesWithLength.map(function(c) { return c.length; }));
+    var maxCyc = Math.max.apply(null, cyclesWithLength.map(function(c) { return c.length; }));
+    statRows.push(
+      e('div', { className: 'stat-row', key: 'avg' }, e('span', { className: 'stat-label' }, '\u00D8 Zykluslänge'), e('span', { className: 'stat-val' }, avg + ' Tage')),
+      e('div', { className: 'stat-row', key: 'min' }, e('span', { className: 'stat-label' }, 'Kürzester'), e('span', { className: 'stat-val' }, minCyc + ' Tage')),
+      e('div', { className: 'stat-row', key: 'max' }, e('span', { className: 'stat-label' }, 'Längster'), e('span', { className: 'stat-val' }, maxCyc + ' Tage'))
+    );
+  }
+  statRows.push(e('div', { className: 'stat-row', key: 'eval' }, e('span', { className: 'stat-label' }, 'Ausgewertete Zyklen'), e('span', { className: 'stat-val' }, analyzed.filter(function(a) { return a.found; }).length)));
+  var excludedCount = analyzed.filter(function(a) { return a.excluded; }).length;
+  if (excludedCount > 0) statRows.push(e('div', { className: 'stat-row', key: 'excl' }, e('span', { className: 'stat-label' }, 'Ausgeschlossene Zyklen'), e('span', { className: 'stat-val', style: { color: '#b03a48' } }, excludedCount)));
+
+  var statsEls = [e('div', { className: 'card', key: 'statcard' }, e('h3', null, 'Zyklusstatistik'), statRows)];
+
+  if (currentFertility) {
+    var bi = currentFertility.beginInfertility;
+    var beginRuleLabel = '';
+    if (bi.safeDays > 0 || bi.rule === 'fertility_signs') {
+      if (bi.rule === 'six_day') beginRuleLabel = '6-Tage-Regel (Anfängerin)';
+      else if (bi.rule === 'calculation') beginRuleLabel = 'Rechenregel: Kürzester Zyklus (' + bi.shortestCycle + ') \u2212 20';
+      else if (bi.rule === 'fine_f') beginRuleLabel = 'Feinbeobachtung f: Unfruchtbar bis vor erstem f (Zyklustag ' + bi.firstFDay + ')';
+      else if (bi.rule === 'advanced_7') beginRuleLabel = 'Fortgeschrittene: Frühester Temp.anstieg (' + bi.earliestFHM + '. Tag) \u2212 7';
+      else if (bi.rule === 'advanced_6') beginRuleLabel = 'Fortgeschrittene: Frühester Temp.anstieg (' + bi.earliestFHM + '. Tag) \u2212 6';
+      else if (bi.rule === 'fertility_signs' && bi.overrideDay) beginRuleLabel = 'Fruchtbarkeitszeichen an Tag ' + bi.overrideDay + ' \u2192 Verkürzung';
+    }
+
+    var beginHintText = '';
+    if (bi.rule === 'no_data') beginHintText = 'Für die Berechnung unfruchtbarer Tage zu Zyklusbeginn werden mindestens 12 Zyklen benötigt. Aktuell: ' + currentFertility.totalRecentCycles + '.';
+    else if (bi.rule === 'fertility_signs' && bi.safeDays === 0) beginHintText = 'Es liegen Zeichen der Fruchtbarkeit vor (Schleim = f, S oder S+). Daher gilt keine unfruchtbare Zeit zu Zyklusbeginn.';
+    else if (bi.rule === 'fertility_signs' && bi.overrideDay) beginHintText = 'Es liegen Zeichen der Fruchtbarkeit vor (Schleim = f, S oder S+) an Tag ' + bi.overrideDay + '. Die unfruchtbare Zeit zu Zyklusbeginn ist daher auf Tag 1\u2013' + bi.safeDays + ' verkürzt.';
+
+    statsEls.push(e('div', { className: 'card', key: 'fertcard' },
+      e('h3', null, 'Fruchtbarkeitsberechnung'),
+      e('div', { className: 'stat-row' }, e('span', { className: 'stat-label' }, 'Abgeschlossene Zyklen'), e('span', { className: 'stat-val' }, currentFertility.totalRecentCycles)),
+      e('div', { className: 'stat-row' }, e('span', { className: 'stat-label' }, 'Davon ausgewertet'), e('span', { className: 'stat-val' }, currentFertility.evaluatedRecentCount)),
+      beginRuleLabel ? e('div', { className: 'stat-row' }, e('span', { className: 'stat-label' }, beginRuleLabel), e('span', { className: 'stat-val' }, 'Tag 1\u2013' + bi.safeDays)) : null,
+      e('div', { className: 'stat-row' }, e('span', { className: 'stat-label' }, 'Unfruchtbar ab'), e('span', { className: 'stat-val' }, currentFertility.endFertileDate ? 'Abend Tag ' + (daysBetween(currentCycle.start, currentFertility.endFertileDate) + 1) : '\u2013')),
+      beginHintText ? e('div', { style: { marginTop: 10, padding: 10, background: '#fdf5e6', borderRadius: 10, fontSize: 12, color: '#8a6d3b', lineHeight: 1.6 } }, beginHintText) : null
+    ));
+  }
+
+  if (barChartData.length > 0) {
+    var barOptions = [
+      { key: 'length', label: 'Zykluslänge' },
+      { key: 'umrandetDay', label: '1. unfruchtbarer Tag' },
+      { key: 'infertilePhase', label: 'Unfruchtbare Phase' }
+    ];
+    var selectedOption = barOptions.find(function(o) { return o.key === barMetric; }) || barOptions[0];
+    var barAvg = 0;
+    if (barChartData.length) {
+      var sum = barChartData.reduce(function(a, c) { return a + (c[barMetric] || 0); }, 0);
+      barAvg = Math.round(sum / barChartData.length);
+    }
+    var totalCompleted = analyzed.filter(function(a) { return a.length; }).length;
+    var totalPages = Math.ceil(totalCompleted / 12);
+    var hasPrevPage = barChartPage < totalPages - 1;
+    var hasNextPage = barChartPage > 0;
+    statsEls.push(e('div', { className: 'card', key: 'barchart' },
+      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 } },
+        e('h3', { style: { margin: 0 } }, 'Zyklen-Vergleich'),
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          e('select', { value: barMetric, onChange: function(ev) { setBarMetric(ev.target.value); },
+            style: { padding: '6px 10px', borderRadius: 10, border: '1.5px solid var(--c-border)', fontSize: 13, fontFamily: 'var(--f-body)', color: 'var(--c-text)', background: 'var(--c-input-bg)', outline: 'none', cursor: 'pointer' } },
+            barOptions.map(function(o) { return e('option', { key: o.key, value: o.key }, o.label); })
+          ),
+          e('button', { onClick: function() { setFullscreenChart('bar'); }, title: 'Vollbild', style: { background: 'none', border: '1.5px solid var(--c-border)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', fontSize: 14, color: 'var(--c-text-muted)', fontFamily: 'var(--f-body)', lineHeight: 1 } }, '\u26F6')
+        )
+      ),
+      totalCompleted > 12 ? e('div', { style: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginBottom: 8 } },
+        e('button', { className: 'btn btn-sec', style: { padding: '4px 12px', fontSize: 12 }, disabled: !hasPrevPage, onClick: function() { setBarChartPage(barChartPage + 1); } }, '\u2039 Ältere'),
+        e('span', { style: { fontSize: 12, color: 'var(--c-text-muted)' } }, (barChartPage + 1) + ' / ' + totalPages),
+        e('button', { className: 'btn btn-sec', style: { padding: '4px 12px', fontSize: 12 }, disabled: !hasNextPage, onClick: function() { setBarChartPage(barChartPage - 1); } }, 'Neuere \u203A')
+      ) : null,
+      e(BarChart, { data: barChartData, metric: barMetric, color: 'var(--c-rose)' }),
+      e('div', { style: { textAlign: 'center', marginTop: 4, fontSize: 12, color: 'var(--c-text-muted)' } },
+        '\u00D8 ' + selectedOption.label + ': ' + barAvg + ' Tage · ' + barChartData.length + ' Zyklen' +
+        (barMetric !== 'length' && barChartData.some(function(d) { return d.excluded; }) ? ' · schraffiert = ausgeschlossen' : '')
+      )
+    ));
+  }
+
+  if (cycles.length > 0) {
+    var statsCycle = cycles[activeStatsCycleIdx];
+    statsEls.push(e('div', { className: 'card', key: 'cyclechart' },
+      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 } },
+        e('h3', { style: { margin: 0 } }, 'Temperaturkurve \u2014 Zyklus'),
+        e('button', { onClick: function() { setFullscreenChart('tempStats'); }, title: 'Vollbild', style: { background: 'none', border: '1.5px solid var(--c-border)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', fontSize: 14, color: 'var(--c-text-muted)', fontFamily: 'var(--f-body)', lineHeight: 1 } }, '\u26F6')
+      ),
+      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 } },
+        e('button', { className: 'btn btn-sec', style: { padding: '6px 14px', fontSize: 12 }, disabled: activeStatsCycleIdx <= 0, onClick: function() { setStatsCycleIdx(Math.max(0, activeStatsCycleIdx - 1)); } }, '\u2039 Voriger'),
+        e('span', { style: { fontSize: 12, color: 'var(--c-text-soft)', textAlign: 'center', flex: 1 } }, statsCycleLabel),
+        e('button', { className: 'btn btn-sec', style: { padding: '6px 14px', fontSize: 12 }, disabled: activeStatsCycleIdx >= cycles.length - 1, onClick: function() { setStatsCycleIdx(Math.min(cycles.length - 1, activeStatsCycleIdx + 1)); } }, 'Nächster \u203A')
+      ),
+      (function() {
+        var cycleStart = statsCycle.start;
+        var isExcluded = settings.excludedCycles && settings.excludedCycles.indexOf(cycleStart) !== -1;
+        return e('div', { style: { textAlign: 'center', marginBottom: 6 } },
+          e('button', { className: 'btn btn-sec', style: { padding: '4px 14px', fontSize: 11, color: isExcluded ? '#5a8a4a' : '#b03a48' }, onClick: function() {
+            var updated = settings.excludedCycles ? settings.excludedCycles.slice() : [];
+            var idx = updated.indexOf(cycleStart);
+            if (idx === -1) updated.push(cycleStart); else updated.splice(idx, 1);
+            saveAppSettings({ tempExcludeReasons: settings.tempExcludeReasons, excludedCycles: updated });
+            showToast(idx === -1 ? 'Zyklus von Auswertung ausgeschlossen' : 'Zyklus wieder eingeschlossen');
+          } }, isExcluded ? '\u2713 Ausgeschlossen (wieder einschließen)' : '\u2717 Von Auswertung ausschließen')
+        );
+      })(),
+      (function() {
+        var cs = statsCycle.start;
+        var isEnabled = settings.manualCoverlineEnabled && settings.manualCoverlineEnabled[cs] === true;
+        var cur = isEnabled && settings.manualCoverline && settings.manualCoverline[cs] !== undefined ? settings.manualCoverline[cs] : (analyzed[activeStatsCycleIdx] && analyzed[activeStatsCycleIdx].found ? analyzed[activeStatsCycleIdx].temp.coverline.toFixed(2) : '');
+        return e('div', { style: { marginBottom: 8 } },
+          e(Toggle, { value: isEnabled, label: 'Coverline manuell festlegen', onChange: function(v) {
+            var updatedEn = settings.manualCoverlineEnabled ? Object.assign({}, settings.manualCoverlineEnabled) : {};
+            if (v) updatedEn[cs] = true; else delete updatedEn[cs];
+            saveAppSettings({ tempExcludeReasons: settings.tempExcludeReasons, excludedCycles: settings.excludedCycles, manualCoverline: settings.manualCoverline, manualCoverlineEnabled: updatedEn });
+          } }),
+          isEnabled ? e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, marginTop: 8, marginLeft: 4 } },
+            e('input', { type: 'number', step: '0.05', min: '35', max: '42', placeholder: 'z.B. 36,50', value: cur, onChange: function(ev) {
+              var v = ev.target.value;
+              var updated = settings.manualCoverline ? Object.assign({}, settings.manualCoverline) : {};
+              if (v === '' || v === undefined) { delete updated[cs]; }
+              else { updated[cs] = v; }
+              saveAppSettings({ tempExcludeReasons: settings.tempExcludeReasons, excludedCycles: settings.excludedCycles, manualCoverline: updated, manualCoverlineEnabled: settings.manualCoverlineEnabled });
+            }, style: { width: 70, padding: '3px 6px', borderRadius: 6, border: '1.5px solid var(--c-border)', fontSize: 11, fontFamily: 'var(--f-body)', background: 'var(--c-input-bg)', color: 'var(--c-text)', textAlign: 'center' }, inputMode: 'decimal' }),
+            cur !== '' && cur !== undefined ? e('button', { onClick: function() {
+              var updated = settings.manualCoverline ? Object.assign({}, settings.manualCoverline) : {};
+              delete updated[cs];
+              saveAppSettings({ tempExcludeReasons: settings.tempExcludeReasons, excludedCycles: settings.excludedCycles, manualCoverline: updated, manualCoverlineEnabled: settings.manualCoverlineEnabled });
+            }, style: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--c-text-muted)', padding: 0, lineHeight: 1 } }, '\u2715') : null
+          ) : null
+        );
+      })(),
+      e(TempChart, { entries: entries, dateRange: statsCycleDates, fertilityMap: fertilityMap, coverlineIn: statsCycle ? getCoverlineFor(statsCycle.start) : null, cycleStart: statsCycle ? statsCycle.start : null, onDateClick: function(date) { setSelectedDate(date); setView('entry'); } })
+    ));
+  }
+
+  if (analyzed.length > 0) {
+    var statsAnalyzed = analyzed[activeStatsCycleIdx];
+    if (statsAnalyzed && statsAnalyzed.criteria) {
+      var crit = statsAnalyzed.criteria;
+      var keys = ['coverlineFound', 'mucusPeak', 'enoughTemps', 'threeEncircled', 'thirdAboveThreshold', 'result'];
+      var allMet = true;
+      var critItems = [];
+      for (var ki = 0; ki < keys.length; ki++) {
+        var c = crit[keys[ki]];
+        if (!c) continue;
+        var isMet = c.met !== undefined ? c.met : null;
+        if (isMet === false) allMet = false;
+        var icon = isMet === true ? '\u2713' : (isMet === false ? '\u2717' : '\u25CF');
+        var iconColor = isMet === true ? '#5a8a4a' : (isMet === false ? '#b03a48' : '#7a8a9e');
+        var bgColor = isMet === true ? 'rgba(90,138,74,0.08)' : (isMet === false ? 'rgba(176,58,72,0.06)' : 'transparent');
+        critItems.push(
+          e('div', { key: keys[ki], style: { padding: '10px 12px', background: bgColor, borderRadius: 8, marginBottom: 6 } },
+            e('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 10 } },
+              e('span', { style: { color: iconColor, fontWeight: 700, fontSize: 16, minWidth: 22, textAlign: 'center', fontFamily: 'var(--f-body)', lineHeight: '1.3' } }, icon),
+              e('div', null,
+                e('div', { style: { fontSize: 13, fontWeight: 600, color: 'var(--c-text)', marginBottom: c.label ? 3 : 0 } }, c.label || ''),
+                c.detail ? e('div', { style: { fontSize: 12, color: 'var(--c-text-soft)', lineHeight: 1.55 } }, c.detail) : null
+              )
+            )
+          )
+        );
+      }
+      var headerText = statsAnalyzed.found ? '\u2705 Auswertung erfolgreich' : '\u274C Auswertung nicht möglich';
+      var critChildren = [
+        e('h3', { key: 'hdr', style: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }, onClick: function() { setCriteriaExpanded(!criteriaExpanded); } },
+          headerText,
+          e('span', { style: { marginLeft: 'auto', fontSize: 12, color: 'var(--c-text-muted)', transition: 'transform .2s', transform: criteriaExpanded ? 'rotate(180deg)' : 'rotate(0deg)' } }, '\u25BC')
+        ),
+        e('div', { key: 'sub', style: { fontSize: 11, color: 'var(--c-text-muted)', marginBottom: 10 } },
+          parseLocal(statsAnalyzed.start).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }) +
+          (statsAnalyzed.length ? ' \u00B7 ' + statsAnalyzed.length + ' Tage' : ' \u00B7 laufend')
+        )
+      ];
+      if (criteriaExpanded) {
+        critChildren.push.apply(critChildren, critItems);
+      }
+      statsEls.push(e('div', { className: 'card', key: 'criteria' }, critChildren));
+    }
+  }
+
+  statsEls.push(e('div', { className: 'card', key: 'legend' },
+    e('h3', null, 'Legende'),
+    e('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, color: 'var(--c-text-soft)' } },
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, e('div', { style: { width: 20, height: 20, borderRadius: 6, background: 'var(--c-fertile-bg)' } }), 'Fruchtbare Tage'),
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, e('div', { style: { width: 20, height: 20, borderRadius: 6, background: 'var(--c-infertile-bg)' } }), 'Unfruchtbare Tage'),
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, e('div', { style: { width: 12, height: 12, borderRadius: '50%', border: '2px solid var(--c-rose)' } }), 'Umrandeter Tag (doppelte Kontrolle bestätigt)'),
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, e('div', { style: { width: 12, height: 12, borderRadius: '50%', background: 'var(--c-blood)' } }), 'Blutungstag'),
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, e('div', { style: { width: 20, height: 0, borderTop: '2px dashed #a8677e' } }), 'Coverline (höchste der 6 vorangeg. Messungen)')
+    )
+  ));
+
+  var statsView = e(Fragment, null, statsEls);
+
+  // ── Sync view ──
+
+  var syncView = e(Fragment, null,
+    e('div', { className: 'card' },
+      e('h3', null, 'Verschlüsselter Sync'),
+      e('p', { style: { fontSize: 13, color: 'var(--c-text-soft)', lineHeight: 1.7, marginBottom: 16 } }, 'Deine Daten werden mit AES-256 verschlüsselt. Lege die Datei in deinem ProtonDrive-Sync-Ordner ab und importiere sie auf dem anderen Gerät.'),
+      e('label', { className: 'field-label' }, '\uD83D\uDD11 Passwort'),
+      e('input', { type: 'password', className: 'inp', placeholder: 'Min. 6 Zeichen', value: syncPassword, onChange: function(ev) { setSyncPassword(ev.target.value); } }),
+      e('div', { style: { display: 'flex', gap: 8 } },
+        e('button', { className: 'btn btn-pri', style: { flex: 1 }, onClick: handleExport }, '\u2193 Export'),
+        e('label', { className: 'btn btn-sec', style: { flex: 1, textAlign: 'center', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, '\u2191 Import',
+          e('input', { type: 'file', accept: '.json', style: { display: 'none' }, onChange: handleImport })
+        )
+      ),
+      e('div', { style: { borderTop: '1px solid #f3edee', marginTop: 16, paddingTop: 14 } },
+        e('h3', null, 'So geht\'s'),
+        ['Export: verschlüsselte .json wird erstellt', 'Datei in ProtonDrive-Sync-Ordner legen', 'Anderes Gerät: Import mit demselben Passwort', 'Einträge werden automatisch zusammengeführt'].map(function(s, i) {
+          return e('div', { key: i, style: { padding: '7px 0', fontSize: 13, color: 'var(--c-text-soft)', lineHeight: 1.6 } },
+            e('span', { style: { color: 'var(--c-rose)', fontWeight: 500 } }, (i + 1) + '.'), ' ' + s);
+        })
+      )
+    ),
+    e('div', { className: 'card' },
+      e('h3', null, 'CSV Export / Import'),
+      e('p', { style: { fontSize: 13, color: 'var(--c-text-soft)', lineHeight: 1.7, marginBottom: 14 } }, 'Exportiere deine Einträge als CSV-Datei für Excel oder Google Sheets. Beim Import werden alle bestehenden Einträge ersetzt.'),
+      e('div', { style: { display: 'flex', gap: 8 } },
+        e('button', { className: 'btn btn-pri', style: { flex: 1 }, onClick: handleCsvExport }, '\u2193 CSV Export'),
+        e('label', { className: 'btn btn-sec', style: { flex: 1, textAlign: 'center', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, '\u2191 CSV Import',
+          e('input', { type: 'file', accept: '.csv', style: { display: 'none' }, onChange: handleCsvImport })
+        )
+      )
+    ),
+    e('div', { className: 'card' },
+      e('h3', null, 'Einstellungen'),
+      e('p', { style: { fontSize: 13, color: 'var(--c-text-soft)', lineHeight: 1.7, marginBottom: 14 } }, 'Passe die Auswahlmöglichkeiten für die Temperatur-Ausklammerung an.'),
+      e('div', { style: { marginBottom: 14 } },
+        e('label', { className: 'field-label' }, 'Gründe für Ausklammerung'),
+        settings.tempExcludeReasons.map(function(r) {
+          var isDefault = DEFAULT_TEMP_EXCLUDE_REASONS.indexOf(r) !== -1;
+          return e('div', { key: r, style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f5efef' } },
+            e('span', { style: { fontSize: 13, color: 'var(--c-text-soft)', fontFamily: 'var(--f-body)' } }, r),
+            isDefault ? e('span', { style: { fontSize: 11, color: 'var(--c-text-muted)', fontStyle: 'italic' } }, 'Standard') : e('button', { className: 'btn btn-sec', style: { padding: '4px 10px', fontSize: 11, color: 'var(--c-blood)' }, onClick: (function(rr) { return function() { var updated = settings.tempExcludeReasons.filter(function(x) { return x !== rr; }); saveAppSettings({ tempExcludeReasons: updated }); }; })(r) }, 'Entfernen')
+          );
+        })
+      ),
+      e('div', { style: { display: 'flex', gap: 8 } },
+        e('input', { type: 'text', className: 'inp', placeholder: 'Neuer Grund...', value: newReason, onChange: function(ev) { setNewReason(ev.target.value); }, style: { marginBottom: 0, flex: 1 } }),
+        e('button', { className: 'btn btn-pri', style: { padding: '11px 16px' }, onClick: function() { var trimmed = newReason.trim(); if (!trimmed || settings.tempExcludeReasons.indexOf(trimmed) !== -1) return; var updated = settings.tempExcludeReasons.slice(); updated.push(trimmed); saveAppSettings({ tempExcludeReasons: updated }); setNewReason(''); } }, 'Hinzufügen')
+      )
+    ),
+    e('div', { className: 'card' },
+      e('h3', null, 'Datenverwaltung'),
+      e('div', { className: 'stat-row' }, e('span', { className: 'stat-label' }, 'Einträge'), e('span', { className: 'stat-val' }, allDates.length)),
+      allDates.length > 0 ? e('div', { className: 'stat-row' }, e('span', { className: 'stat-label' }, 'Zeitraum'), e('span', { style: { fontSize: 13, color: '#5a3d42' } }, parseLocal(allDates[0]).toLocaleDateString('de-DE') + ' \u2013 ' + parseLocal(allDates[allDates.length - 1]).toLocaleDateString('de-DE'))) : null,
+      e('button', { className: 'btn btn-sec', style: { width: '100%', marginTop: 12, color: 'var(--c-blood)' }, onClick: function() {
+        if (confirm('Alle Daten unwiderruflich löschen?')) { saveEntries({}); showToast('Gelöscht'); }
+      } }, 'Alle Daten löschen')
+    )
+  );
+
+  // ── Render ──
+
+  var mainContent;
+  if (view === 'calendar') mainContent = calView;
+  else if (view === 'entry') mainContent = entryView;
+  else if (view === 'stats') mainContent = statsView;
+  else mainContent = syncView;
+
+  return e('div', { className: 'app' },
+    headerEl,
+    navEl,
+    mainContent,
+    fullscreenChart ? e('div', { style: { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100dvh', background: 'var(--c-bg)', zIndex: 9999, display: 'flex', flexDirection: 'column', padding: '12px 16px', boxSizing: 'border-box' } },
+      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexShrink: 0 } },
+        e('h3', { style: { margin: 0, fontFamily: 'var(--f-head)', fontWeight: 500, fontSize: 16, color: '#5a3d42' } },
+          fullscreenChart === 'tempCal' ? 'Temperaturkurve' : fullscreenChart === 'tempStats' ? 'Temperaturkurve \u2014 Zyklus' : 'Zyklen-Vergleich'
+        ),
+        e('button', { onClick: function() { setFullscreenChart(null); }, style: { background: 'none', border: '1.5px solid var(--c-border)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 16, color: 'var(--c-text)', fontFamily: 'var(--f-body)', lineHeight: 1 } }, '\u2715')
+      ),
+      e('div', { style: { flex: 1, overflow: 'auto', display: 'flex', alignItems: 'flex-start' } },
+        (function() {
+          if (fullscreenChart === 'tempCal') {
+            return e(TempChart, { fullscreen: true, entries: entries, dateRange: chartDates, fertilityMap: fertilityMap, coverlineIn: currentCycle ? getCoverlineFor(currentCycle.start) : null, cycleStart: currentCycle ? currentCycle.start : null, onDateClick: function(date) { setSelectedDate(date); setView('entry'); setFullscreenChart(null); } });
+          } else if (fullscreenChart === 'tempStats') {
+            return e(TempChart, { fullscreen: true, entries: entries, dateRange: statsCycleDates, fertilityMap: fertilityMap, coverlineIn: statsCycle ? getCoverlineFor(statsCycle.start) : null, cycleStart: statsCycle ? statsCycle.start : null, onDateClick: function(date) { setSelectedDate(date); setView('entry'); setFullscreenChart(null); } });
+          } else if (fullscreenChart === 'bar') {
+            return e(BarChart, { fullscreen: true, data: barChartData, metric: barMetric, color: 'var(--c-rose)' });
+          }
+          return null;
+        })()
+      )
+    ) : null,
+    toast ? e('div', { className: 'toast' }, toast) : null
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(e(App, null));
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+</body>
+</html>

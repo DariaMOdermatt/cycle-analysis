@@ -1,0 +1,27 @@
+# R
+.RData
+.Rhistory
+.Rproj.user/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Ausgeschlossene Projektdateien
+Logoideen.pptx
+icon_old.svg
+zyklus-app(3).html
+beispielzyklen.csv
+beispielzyklen_csv.csv
+cycle-data-2years.csv
+RealData/
+Test/
+old/

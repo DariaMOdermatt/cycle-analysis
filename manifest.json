@@ -1,0 +1,18 @@
+{
+  "name": "Zyklus – Zyklustracker",
+  "short_name": "Zyklus",
+  "description": "Menstruations- und Fruchtbarkeitstracker nach der symptothermalen Methode (Sensiplan/NFP)",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#faf6f4",
+  "theme_color": "#faf6f4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
