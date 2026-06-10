@@ -1,4 +1,4 @@
-const CACHE = "zyklus-v1";
+const CACHE = "zyklus-v2";
 
 const LOCAL = [
   "./",
